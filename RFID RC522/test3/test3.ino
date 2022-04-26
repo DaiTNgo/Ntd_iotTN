@@ -6,10 +6,10 @@
 
 int UID[4], i;
 
-int ID1[4] = {91, 37, 120, 34}; //Thẻ bật tắt đèn
-int led = 8;
+int ID1[4] = {91, 37, 120, 34}; //Thẻ mở đèn
+int ID2[4] = {185, 219, 91, 162}; //Thẻ tắt đèn
 
-int dem = 0;
+int led = 8;
  
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
@@ -49,30 +49,24 @@ void loop()
   }
 
   Serial.println("   ");
-  
+
   if (UID[i] == ID1[i])
   {
-    dem ++;
-    Serial.print("Biến Đếm: ");
-    Serial.println(dem);
-    
-      if ( (dem % 2) == 1) //Số lẻ đèn ON
-      {
-        digitalWrite(led, HIGH);
-        Serial.println("ĐÈN ON");    
-      }
-      else
-      {
-        digitalWrite(led, LOW);
-        Serial.println("ĐÈN OFF");       
-      }
+    digitalWrite(led, HIGH);
+    Serial.println("Thẻ mở đèn - ĐÈN ON");
   }
   
-  else
+  else if (UID[i] == ID2[i])
   {
-    Serial.println("SAI THẺ........");
+    digitalWrite(led, LOW);
+    Serial.println("Thẻ tắt đèn - ĐÈN OFF");
   }
 
+  else
+  {
+    Serial.println("Sai thẻ");
+  }
+  
   mfrc522.PICC_HaltA();  
   mfrc522.PCD_StopCrypto1();
 
