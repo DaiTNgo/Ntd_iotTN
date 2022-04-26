@@ -30,15 +30,10 @@ void loop()
   for (int i=0; i<=100; i++)
   {
     I = sensor.getCurrentAC(); //Đo dòng AC
-    //Serial.print("I = "); Serial.print(I); Serial.print("   ");
     tong = tong + I;
-    //Serial.print("Tổng = "); Serial.println(tong);
   }
   I_TB = tong/100;
   tong = 0;
-  //Serial.print("\t\t\t");
-  Serial.print("I = "); Serial.print(I_TB); Serial.print("A"); Serial.print("   ");
   ma = I_TB * 1000;   
-  Serial.print("mA = "); Serial.print(ma); Serial.println("mA");
   delay(100);
 }
