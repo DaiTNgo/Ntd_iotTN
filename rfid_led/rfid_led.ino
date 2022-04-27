@@ -6,10 +6,10 @@
 #include "ACS712.h"
 
 ACS712 sensor(ACS712_30A, A0);
-//Cảm biến 30A, kết nối chân A0
-//ACS712_05B
-//ACS712_20A
-//ACS712_30A
+// Cảm biến 30A, kết nối chân A0
+// ACS712_05B
+// ACS712_20A
+// ACS712_30A
 float tong;
 float I;
 float I_TB;
@@ -39,7 +39,7 @@ unsigned long ticketNumber;
 
 class User
 {
-  public:
+public:
     int port;
     int uid;
     String firstTime;
@@ -48,204 +48,175 @@ class User
 
     User(int _port, int _uid, unsigned long _breakFirstTime, String _firstTime, String _lastTime)
     {
-      port = _port;
-      uid = _uid;
-      breakFirstTime = _breakFirstTime;
-      firstTime = _firstTime;
-      lastTime = _lastTime;
+        port = _port;
+        uid = _uid;
+        breakFirstTime = _breakFirstTime;
+        firstTime = _firstTime;
+        lastTime = _lastTime;
     }
 };
 
-User user_1(0, 0, 0, "", "");
-User user_2(1, 0, 0, "", "");
-User user_3(2, 0, 0, "", "");
-User user_4(3, 0, 0, "", "");
-User user_5(4, 0, 0, "", "");
+User user_0(0, 0, 0, "", "");
+User user_1(1, 0, 0, "", "");
+User user_2(2, 0, 0, "", "");
+User user_3(3, 0, 0, "", "");
+User user_4(4, 0, 0, "", "");
 
 int powerOutlet[5]; // mảng chứa trạng thái của 5 ổ điện => mức 1 nếu ổ điện đang được sử dụng
 
 int portReadCurrent[5] = {22, 23, 24, 25, 26}
 
-                         void
-                         setup()
+void
+setup()
 {
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
-  Serial.begin(9600);
-  SPI.begin();
-  mfrc522.PCD_Init();
-  Serial.println("Prilozhite kartu / Waiting for card...");
-  Serial.println("Đảm bảo không có dòng điện đi qua cảm biến trong quá trình cân bằng");
-  delay(1000);
-  Serial.println("Calibrating...");
-  delay(200);
-  sensor.calibrate();
-  Serial.println("Quá trình cân bằng hoàn tất!!!");
+    pinMode(LED1, OUTPUT);
+    pinMode(LED2, OUTPUT);
+    Serial.begin(9600);
+    SPI.begin();
+    mfrc522.PCD_Init();
+    Serial.println("Prilozhite kartu / Waiting for card...");
+    Serial.println("Đảm bảo không có dòng điện đi qua cảm biến trong quá trình cân bằng");
+    delay(1000);
+    Serial.println("Calibrating...");
+    delay(200);
+    sensor.calibrate();
+    Serial.println("Quá trình cân bằng hoàn tất!!!");
 }
 
 void loop()
 {
-  // Tim the moi
-  if (!mfrc522.PICC_IsNewCardPresent())
-  {
-    return;
-  }
-
-  // Doc the
-  if (!mfrc522.PICC_ReadCardSerial())
-  {
-    return;
-  }
-//@TODO: chỉ chạy xuống đây có một lần :( khi quẹt thẻ
-
-  uidDec = 0;
-  Serial.println("MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM");
-  Serial.println("================================================");
-
-  // Hien thi so UID cua the
-  Serial.println("Serijnyj nomer karty / Card UID: ");
-  for (byte i = 0; i < mfrc522.uid.size; i++)
-  {
-    uidDecTemp = mfrc522.uid.uidByte[i];
-    uidDec = uidDec * 256 + uidDecTemp;
-  }
-  Serial.print("            [");
-  Serial.print(uidDec);
-  if (uidDec == 696335238)
-  {
-    digitalWrite(LED1, !digitalRead(LED1));
-    delay(5000);
-  }
-  else
-  {
-  }
-  //--------------------------------
-  if (uidDec == 3501146325)
-  {
-    digitalWrite(LED2, !digitalRead(LED2));
-    delay(5000);
-  }
-  else
-  {
-  }
-  Serial.println("]");
-  Serial.println("================================================");
-
-  // Hien thi loai the
-  byte piccType = mfrc522.PICC_GetType(mfrc522.uid.sak); // Tra cuu dinh dang the
-  Serial.println("Tip karty / Card type: ");
-
-  Serial.print(" [");
-  Serial.print(mfrc522.PICC_GetTypeName(piccType)); // Chuyen dinh dang the ve kieu doc
-  Serial.println("]");
-  Serial.println("================================================");
-  if (piccType != MFRC522::PICC_TYPE_MIFARE_UL)
-  { // Neu khong dung dinh dang the
-
-    Serial.println("Neizvestnaja karta / Not a valid card: Type");
-    Serial.print("            [");
-    Serial.print(piccType);
-    Serial.println("]");
-    Serial.println("================================================");
-    Serial.println("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
-
-    // Halt PICC
-    mfrc522.PICC_HaltA(); // dung lai
-    return;
-    delay(1);
-  }
-
-  // quẹt thẻ xác định danh tính chuẩn quẹt thẻ nó mới chạy xuống tới dây, nếu không quẹt thẻ thì nó không chạy xuống tới đây.
-  if (true)
-  {
-    // xem thử port nào chưa sử dụng thì bật lên sử dụng
-    for (int i = 0; i < powerOutlet.length; i++)
+    // Tim the moi
+    if (!mfrc522.PICC_IsNewCardPresent())
     {
-      if (powerOutlet[i] == 0)
-      {
-        powerOutlet[i] = 1;
-
-        switch (i)
+        // đợi thời gian để cắm thiết bị sạc =>15s => tắt sau 15s
+        for (int i = 0; < powerOutlet.length; i++)
         {
-          case 0:
-            user_1.uid = uidDec;
-            break;
-          case 1:
-            user_2.uid = uidDec;
-            break;
-          case 2:
-            user_3.uid = uidDec;
-            break;
-          case 3:
-            user_4.uid = uidDec;
-            break;
-          case 4:
-            user_5.uid = uidDec;
-            break;
-          default:
-            break;
+            // read dữ liệu port ở vị trí được bật
+            if (powerOutlet[i] == 1)
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    I = sensor.getCurrentAC();
+                    tong = tong + I;
+                }
+                I_TB = tong / 100;
+                tong = 0;
+                p = 220 * I_TB;
+                mA = I_TB * 1000;
+                delay(100);
+
+                switch (i)
+                {
+                case 0:
+                    user_1.breakFirstTime = millis();
+                    break;
+                case 1:
+                    user_2.breakFirstTime = millis();
+                    break;
+                case 2:
+                    user_3.breakFirstTime = millis();
+                    break;
+                case 3:
+                    user_4.breakFirstTime = millis();
+                    break;
+                case 4:
+                    user_5.breakFirstTime = millis();
+                    break;
+                default:
+                    break;
+                }
+                // read port portReadCurrent[i];
+                /**
+                   if read current < threshold
+                   if (millis() - ti        me_now > period)
+                   {
+                   wait approx. [period] ms
+                   time_now = millis();
+                   }
+
+                  powerOutlet[i] = 0;
+                  send data->server
+                */
+            }
         }
-        break;
-      }
-    }
-  }
 
-  // đợi thời gian để cắm thiết bị sạc =>15s => tắt sau 15s
-  for (int i = 0; < powerOutlet.length; i++)
-  {
-    // read dữ liệu port ở vị trí được bật
-    if (powerOutlet[i] == 1)
+        return;
+    }
+    // Doc the
+    if (!mfrc522.PICC_ReadCardSerial())
     {
-
-      for (int i = 0; i < 100; i++)
-      {
-        I = sensor.getCurrentAC();
-        tong = tong + I;
-      }
-      I_TB = tong / 100;
-      tong = 0;
-      p = 220 * I_TB ;
-      mA = I_TB * 1000;
-      delay(100);
-
-      switch (i)
-      {
-        case 0:
-          user_1.breakFirstTime = millis();
-          break;
-        case 1:
-          user_2.breakFirstTime = millis();
-          break;
-        case 2:
-          user_3.breakFirstTime = millis();
-          break;
-        case 3:
-          user_4.breakFirstTime = millis();
-          break;
-        case 4:
-          user_5.breakFirstTime = millis();
-          break;
-        default:
-          break;
-      }
-      // read port portReadCurrent[i];
-      /**
-         if read current < threshold
-         if (millis() - ti        me_now > period)
-         {
-         wait approx. [period] ms
-         time_now = millis();
-         }
-
-        powerOutlet[i] = 0;
-        send data->server
-      */
+        return;
     }
-  }
+    uidDec = 0;
 
-  // luồng chạy ra sau để nhận biết được trong 5 port thì có port họ hết quá trình sạc thiết bị
+    // Hien thi so UID cua the
+    Serial.println("Card UID: ");
+    for (byte i = 0; i < mfrc522.uid.size; i++)
+    {
+        uidDecTemp = mfrc522.uid.uidByte[i];
+        uidDec = uidDec * 256 + uidDecTemp;
+    }
+    Serial.print(uidDec);
 
-  // Halt PICC
-  mfrc522.PICC_HaltA();
-  mfrc522.PCD_StopCrypto1();
+    // Hien thi loai the
+    byte piccType = mfrc522.PICC_GetType(mfrc522.uid.sak); // Tra cuu dinh dang the
+    Serial.println("Tip karty / Card type: ");
+    Serial.print(mfrc522.PICC_GetTypeName(piccType));
+
+    // TODO: --complete [[[[----
+    if (piccType != MFRC522::PICC_TYPE_MIFARE_UL)
+    {
+        // FIXME: Neu khong dung dinh dang the, thì thoát
+        Serial.println("Not a valid card: Type");
+        Serial.print("[");
+        Serial.print(piccType);
+        Serial.println("]");
+        Serial.println("================================================");
+        mfrc522.PICC_HaltA();
+        mfrc522.PCD_StopCrypto1();
+        return;
+    }
+    // ----]]]]
+
+    if (uidDec == 3258053915 || uidDec == 3005101082)
+    {
+        // xem thử port nào chưa sử dụng thì bật lên sử dụng
+        // nếu port thứ i thì user_[i]
+        for (int i = 0; i < powerOutlet.length; i++)
+        {
+            if (powerOutlet[i] == 0)
+            {
+                powerOutlet[i] = 1;
+
+                switch (i)
+                {
+                case 0:
+                    user_0.uid = uidDec;
+                    break;
+                case 1:
+                    user_1.uid = uidDec;
+                    break;
+                case 2:
+                    user_2.uid = uidDec;
+                    break;
+                case 3:
+                    user_3.uid = uidDec;
+                    break;
+                case 4:
+                    user_4.uid = uidDec;
+                    break;
+                default:
+                    break;
+                }
+                break;
+            }
+        }
+    }
+    else
+    {
+        Serial.println("Sai the");
+    }
+
+    mfrc522.PICC_HaltA();
+    mfrc522.PCD_StopCrypto1();
 }
