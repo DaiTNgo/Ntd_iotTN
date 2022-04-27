@@ -5,7 +5,6 @@
 
 #include "ACS712.h"
 
-ACS712 sensor(ACS712_30A, A0);
 // Cảm biến 30A, kết nối chân A0
 // ACS712_05B
 // ACS712_20A
@@ -42,11 +41,11 @@ class User
 public:
     int port;
     int uid;
-    String firstTime;
-    String lastTime;
+    unsigned long firstTime;
+    unsigned long lastTime;
     unsigned long breakFirstTime;
-
-    User(int _port, int _uid, unsigned long _breakFirstTime, String _firstTime, String _lastTime)
+    float avgCurrent;
+    User(int _port, int _uid, unsigned long _breakFirstTime, unsigned long _firstTime, unsigned long _lastTime)
     {
         port = _port;
         uid = _uid;
@@ -56,18 +55,23 @@ public:
     }
 };
 
-User user_0(0, 0, 0, "", "");
-User user_1(1, 0, 0, "", "");
-User user_2(2, 0, 0, "", "");
-User user_3(3, 0, 0, "", "");
-User user_4(4, 0, 0, "", "");
+User user_0(0, 0, 0, 0, 0);
+User user_1(1, 0, 0, 0, 0);
+User user_2(2, 0, 0, 0, 0);
+User user_3(3, 0, 0, 0, 0);
+User user_4(4, 0, 0, 0, 0);
 
+User Users[5] = {user_0, user_1, user_2, user_3, user_4};
 int powerOutlet[5]; // mảng chứa trạng thái của 5 ổ điện => mức 1 nếu ổ điện đang được sử dụng
+int portPowerOutlet[5] = {22, 23, 24, 25, 26};
 
-int portReadCurrent[5] = {22, 23, 24, 25, 26}
+ACS712 sensor_0(ACS712_30A, A0);
+ACS712 sensor_1(ACS712_30A, A1);
+ACS712 sensor_2(ACS712_30A, A2);
+ACS712 sensor_3(ACS712_30A, A3);
+ACS712 sensor_4(ACS712_30A, A4);
 
-void
-setup()
+void setup()
 {
     pinMode(LED1, OUTPUT);
     pinMode(LED2, OUTPUT);
@@ -99,44 +103,33 @@ void loop()
                     I = sensor.getCurrentAC();
                     tong = tong + I;
                 }
-                I_TB = tong / 100;
+                float I_current = tong / 100;
+                I_TB = (I_current + I_TB) / 2;
                 tong = 0;
                 p = 220 * I_TB;
                 mA = I_TB * 1000;
-                delay(100);
-
-                switch (i)
+                // Users[i].breakFirstTime
+                if (I_current * 1000 < 100)
                 {
-                case 0:
-                    user_1.breakFirstTime = millis();
-                    break;
-                case 1:
-                    user_2.breakFirstTime = millis();
-                    break;
-                case 2:
-                    user_3.breakFirstTime = millis();
-                    break;
-                case 3:
-                    user_4.breakFirstTime = millis();
-                    break;
-                case 4:
-                    user_5.breakFirstTime = millis();
-                    break;
-                default:
-                    break;
+                    if (millis() - Users[i].breakFirstTime < 15000)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        Users[i].lastTime = millis();
+                        powerOutlet[i] = 0;
+                    }
                 }
-                // read port portReadCurrent[i];
-                /**
-                   if read current < threshold
-                   if (millis() - ti        me_now > period)
-                   {
-                   wait approx. [period] ms
-                   time_now = millis();
-                   }
-
-                  powerOutlet[i] = 0;
-                  send data->server
-                */
+                else
+                {
+                    Users[i].breakFirstTime = millis();
+                    if (Users[i].firstTime == 0)
+                    {
+                        Users[i].firstTime = millis();
+                    }
+                    Users[i].avgCurrent = I_TB;
+                }
             }
         }
 
@@ -163,7 +156,6 @@ void loop()
     Serial.println("Tip karty / Card type: ");
     Serial.print(mfrc522.PICC_GetTypeName(piccType));
 
-    // TODO: --complete [[[[----
     if (piccType != MFRC522::PICC_TYPE_MIFARE_UL)
     {
         // FIXME: Neu khong dung dinh dang the, thì thoát
@@ -176,7 +168,6 @@ void loop()
         mfrc522.PCD_StopCrypto1();
         return;
     }
-    // ----]]]]
 
     if (uidDec == 3258053915 || uidDec == 3005101082)
     {
@@ -187,28 +178,10 @@ void loop()
             if (powerOutlet[i] == 0)
             {
                 powerOutlet[i] = 1;
+                digitalWrite(portPowerOutlet[i], 1);
 
-                switch (i)
-                {
-                case 0:
-                    user_0.uid = uidDec;
-                    break;
-                case 1:
-                    user_1.uid = uidDec;
-                    break;
-                case 2:
-                    user_2.uid = uidDec;
-                    break;
-                case 3:
-                    user_3.uid = uidDec;
-                    break;
-                case 4:
-                    user_4.uid = uidDec;
-                    break;
-                default:
-                    break;
-                }
-                break;
+                Users[i].uid = uidDec;
+                Users[i].breakFirstTime = millis();
             }
         }
     }
