@@ -92,6 +92,7 @@ void setup()
 
 void loop()
 {
+    lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Xin chao ^^");
     lcd.setCursor(0, 1);
@@ -182,20 +183,22 @@ void loop()
     Serial.println("Tip karty / Card type: ");
     Serial.print(mfrc522.PICC_GetTypeName(piccType));
 
-    // if (piccType != MFRC522::PICC_TYPE_MIFARE_UL)
-    // {
-    //     // FIXME: Neu khong dung dinh dang the, thì thoát
-    //     Serial.println(" Type Card in else.");
-    //     Serial.print(piccType);
-    //     Serial.println(" Type Card is not valid");
-    //     lcd.setCursor(0, 0);
-    //     lcd.print("Card isn't valid");
-    //     lcd.setCursor(0, 1);
-    //     lcd.print("Sorry, Again.");
-    //     mfrc522.PICC_HaltA();
-    //     mfrc522.PCD_StopCrypto1();
-    //     return;
-    // }
+    if (piccType != MFRC522::PICC_TYPE_MIFARE_UL)
+    {
+        Serial.println(" Type Card in else.");
+        Serial.print(piccType);
+        Serial.println(" Type Card is not valid");
+        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Card isn't valid");
+        lcd.setCursor(0, 1);
+        lcd.print("Sorry, Again.");
+        delay(500);
+        mfrc522.PICC_HaltA();
+        mfrc522.PCD_StopCrypto1();
+        return;
+    }
 
     if (uidDec == 3258053915 || uidDec == 3005101082)
     {
@@ -207,15 +210,16 @@ void loop()
         {
             if (powerOutlet[i] == 0)
             {
-                // lcd.setCursor(0, 0);
-                // lcd.print("Port ");
-                // lcd.setCursor(6, 0);
-                // lcd.print(i);
-                // lcd.setCursor(8, 0);
-                // lcd.print("Open.");
-                // lcd.setCursor(0, 1);
-                // lcd.print("You can charge");
-                // delay(2000);
+                lcd.clear();
+                lcd.setCursor(0, 0);
+                lcd.print("Port ");
+                lcd.setCursor(6, 0);
+                lcd.print(i);
+                lcd.setCursor(8, 0);
+                lcd.print("Open.");
+                lcd.setCursor(0, 1);
+                lcd.print("You can charge");
+                delay(500);
                 Serial.println("bật cổng sạc.");
                 powerOutlet[i] = 1;
                 digitalWrite(portPowerOutlet[i], 1);
@@ -229,11 +233,14 @@ void loop()
     }
     else
     {
+        lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Card isn't Valid.");
         lcd.setCursor(0, 1);
         lcd.print("Sorry, Again.");
+        delay(500);
         Serial.println("Sai thẻ rồi.");
+
     }
 
     mfrc522.PICC_HaltA();
