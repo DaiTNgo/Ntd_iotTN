@@ -32,13 +32,13 @@ public:
     int uid;
     unsigned long firstTime;
     unsigned long lastTime;
-    unsigned long breakFirstTime;
-    float avgCurrent;
+    unsigned long breakTime;
+    float avgCurrent = 0;
     User(int _port, int _uid, unsigned long _breakFirstTime, unsigned long _firstTime, unsigned long _lastTime)
     {
         port = _port;
         uid = _uid;
-        breakFirstTime = _breakFirstTime;
+        breakTime = _breakFirstTime;
         firstTime = _firstTime;
         lastTime = _lastTime;
     }
@@ -52,7 +52,7 @@ User user_4(4, 0, 0, 0, 0);
 
 User Users[5] = {user_0, user_1, user_2, user_3, user_4};
 //=====================
-int powerOutlet[5];                            // mảng chứa trạng thái của 5 ổ điện => mức 1 nếu ổ điện đang được sử dụng
+int powerOutlet[5] ={0,0,0,0,0};                            // mảng chứa trạng thái của 5 ổ điện => mức 1 nếu ổ điện đang được sử dụng
 int portPowerOutlet[5] = {22, 23, 24, 25, 26}; // port đọc dòng điện của ổ sạc
 // TODO:Array Sensor: ACS712_05B | ACS712_20A | ACS712_30A
 ACS712 sensor_0(ACS712_05B, A0);
@@ -72,12 +72,11 @@ void setup()
     mfrc522.PCD_Init();
     Serial.println("Prilozhite kartu / Waiting for card...");
     Serial.println("Đảm bảo không có dòng điện đi qua cảm biến trong quá trình cân bằng");
-    delay(1000);
     Serial.println("Calibrating...");
-    delay(200);
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < numberPort; i++)
     {
         sensors[i].calibrate();
+        delay(1000);
     }
 
     Serial.println("Quá trình cân bằng hoàn tất!!!");
@@ -118,7 +117,7 @@ void loop()
                 if (I_current * 1000 < thresholdCurrent)
                 {
                     Serial.print("Threshold Current.");
-                    if (millis() - Users[i].breakFirstTime < period)
+                    if (millis() - Users[i].breakTime < period)
                     {
                         Serial.println("Period.");
                         continue;
@@ -127,19 +126,25 @@ void loop()
                     {
                         Serial.println("Đóng cổng sạc sao khi thấy quá thời gian chờ.");
                         Users[i].lastTime = millis();
+                        //"{\"port:"+String(Users[i].port)+, +"+"}"
+                         // Send Json
                         powerOutlet[i] = 0;
+                        Users[i].uid = 0;
+                        Users[i].breakTime = 0;
+                        Users[i].firstTime = 0;
+                        Users[i].lastTime = 0;
+                        Users[i].avgCurrent = 0;
                     }
                 }
                 else
                 {
-                    Users[i].breakFirstTime = millis();
+                    Users[i].breakTime = millis();
                     if (Users[i].firstTime == 0)
                     {
                         Users[i].firstTime = millis();
                     }
                     if (Users[i].avgCurrent == 0)
                     {
-                        Serial.println("Vao avgCurrent = 0");
                         I_TB = I_current;
                     }
                     else
@@ -216,7 +221,7 @@ void loop()
                 digitalWrite(portPowerOutlet[i], 1);
 
                 Users[i].uid = uidDec;
-                Users[i].breakFirstTime = millis();
+                Users[i].breakTime = millis();
                 Serial.println("UID của thiết bị đang sạc là:");
                 Serial.println(Users[i].uid);
             }
