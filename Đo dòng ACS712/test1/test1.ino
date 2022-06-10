@@ -1,4 +1,4 @@
-#include "ACS712.h"
+#include <ACS712.h>
 
 ACS712 sensor(ACS712_30A, A0); //Cảm biến 30A, kết nối chân A0
 //ACS712_05B

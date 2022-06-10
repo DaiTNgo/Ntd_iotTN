@@ -1,11 +1,3 @@
-/*
-  ACS712 Current Sensor
-  modified on 06 Sep 2020
-  by Mohammad Reza Akbari @ Electropeak
-  Home
-*/
-
-
 int analogPin = A0; // Current sensor output
 
 const int averageValue = 500;
@@ -13,13 +5,11 @@ long int sensorValue = 0;  // variable to store the sensor value read
 
 float voltage = 0;
 float current = 0;
-
 void setup() {
   Serial.begin(9600);           //  setup serial
 }
 
 void loop() {
-
   for (int i = 0; i < averageValue; i++)
   {
     sensorValue += analogRead(analogPin);

@@ -14,7 +14,7 @@ unsigned int dem = 0;
 
 unsigned long  tim = 0;
 
-float vo = 0,
+float vo = 0;
 float ampe = 0;
 float volt = 0;
 float dien = 0;

@@ -15,7 +15,6 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
  * 3.3 3.3v
  *
  */
-float tong = 0;
 float I = 0;
 float I_TB = 0;
 
@@ -23,7 +22,7 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 unsigned long uidDec, uidDecTemp; // hien thi so UID dang thap phan
 
 int period = 15000;
-int thresholdCurrent = 10;
+int thresholdCurrent = 100;
 
 class User
 {
@@ -33,26 +32,27 @@ public:
     unsigned long firstTime;
     unsigned long lastTime;
     unsigned long breakTime;
-    float avgCurrent = 0;
-    User(int _port, int _uid, unsigned long _breakFirstTime, unsigned long _firstTime, unsigned long _lastTime)
+    float current;
+    User(int _port, int _uid, float _current, unsigned long _breakFirstTime, unsigned long _firstTime, unsigned long _lastTime)
     {
         port = _port;
         uid = _uid;
         breakTime = _breakFirstTime;
         firstTime = _firstTime;
         lastTime = _lastTime;
+        current = _current;
     }
 };
 // TODO:Array User
-User user_0(0, 0, 0, 0, 0);
-User user_1(1, 0, 0, 0, 0);
-User user_2(2, 0, 0, 0, 0);
-User user_3(3, 0, 0, 0, 0);
-User user_4(4, 0, 0, 0, 0);
+User user_0(0, 0, 0, 0, 0, 0);
+User user_1(1, 0, 0, 0, 0, 0);
+User user_2(2, 0, 0, 0, 0, 0);
+User user_3(3, 0, 0, 0, 0, 0);
+User user_4(4, 0, 0, 0, 0, 0);
 
-User Users[5] = {user_0, user_1, user_2, user_3, user_4};
+User users[5] = {user_0, user_1, user_2, user_3, user_4};
 //=====================
-int powerOutlet[5] ={0,0,0,0,0};                            // mảng chứa trạng thái của 5 ổ điện => mức 1 nếu ổ điện đang được sử dụng
+int powerOutlet[5] = {0, 0, 0, 0, 0};          // mảng chứa trạng thái của 5 ổ điện => mức 1 nếu ổ điện đang được sử dụng
 int portPowerOutlet[5] = {22, 23, 24, 25, 26}; // port đọc dòng điện của ổ sạc
 // TODO:Array Sensor: ACS712_05B | ACS712_20A | ACS712_30A
 ACS712 sensor_0(ACS712_05B, A0);
@@ -68,6 +68,7 @@ const int numberPort = 1;
 void setup()
 {
     Serial.begin(9600);
+    Serial.begin(115200);
     SPI.begin();
     mfrc522.PCD_Init();
     Serial.println("Prilozhite kartu / Waiting for card...");
@@ -105,6 +106,7 @@ void loop()
             // read dữ liệu port ở vị trí được bật
             if (powerOutlet[i] == 1)
             {
+                float tong = 0;
                 Serial.println("Vào đọc cổng sạc đang mở.");
                 for (int x = 0; x < 100; x++)
                 {
@@ -112,13 +114,12 @@ void loop()
                     tong = tong + I;
                 }
                 float I_current = tong / 100;
-                tong = 0;
-                Serial.print("Dòng sạc hiện tại là: ");
+                Serial.print("Dòng sạc mA hiện tại là: ");
                 Serial.println(I_current * 1000);
                 if (I_current * 1000 < thresholdCurrent)
                 {
                     Serial.print("Threshold Current.");
-                    if (millis() - Users[i].breakTime < period)
+                    if (millis() - users[i].breakTime < period)
                     {
                         Serial.println("Period.");
                         continue;
@@ -126,36 +127,39 @@ void loop()
                     else
                     {
                         Serial.println("Đóng cổng sạc sao khi thấy quá thời gian chờ.");
-                        Users[i].lastTime = millis();
-                        //"{\"port:"+String(Users[i].port)+, +"+"}"
-                         // Send Json
+                        users[i].lastTime = millis();
+                        // {
+                        //     "current" : "fsd",
+                        //     "time" : "",
+                        //     "uid" : "",
+                        // };
+
+                        // Send Json
+                        String sData = "{\"current\":\"" + String(users[i].current) + "\"," + "\"time\":\"" + String(users[i].lastTime - users[i].firstTime) + "\"," + "\"uid\":\"" + String(users[i].uid) + "\"}";
+                        Serial2.println(sData);
+                        Serial2.flush();
                         powerOutlet[i] = 0;
-                        Users[i].uid = 0;
-                        Users[i].breakTime = 0;
-                        Users[i].firstTime = 0;
-                        Users[i].lastTime = 0;
-                        Users[i].avgCurrent = 0;
+                        users[i].uid = 0;
+                        users[i].breakTime = 0;
+                        users[i].firstTime = 0;
+                        users[i].lastTime = 0;
+                        users[i].current = 0;
                     }
                 }
                 else
                 {
-                    Users[i].breakTime = millis();
-                    if (Users[i].firstTime == 0)
+                    users[i].breakTime = millis();
+                    if (users[i].firstTime == 0)
                     {
-                        Users[i].firstTime = millis();
+                        users[i].firstTime = millis();
                     }
-                    if (Users[i].avgCurrent == 0)
+                    if (users[i].current < I_current)
                     {
-                        I_TB = I_current;
-                    }
-                    else
-                    {
-                        I_TB = (I_current + Users[i].avgCurrent) / 2;
+                        users[i].current = I_current;
                     }
 
-                    Users[i].avgCurrent = I_TB;
-                    // Serial.println("Dong sac của thiết bị hiện tại là:");
-                    // Serial.println(Users[i].avgCurrent * 1000);
+                    Serial.println("Dong sac của thiết bị hiện tại là:");
+                    Serial.println(users[i].current * 1000);
                 }
             }
         }
@@ -188,7 +192,7 @@ void loop()
         Serial.println(" Type Card in else.");
         Serial.print(piccType);
         Serial.println(" Type Card is not valid");
-        
+
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Card isn't valid");
@@ -212,7 +216,7 @@ void loop()
             {
                 lcd.clear();
                 lcd.setCursor(0, 0);
-                lcd.print("Port ");
+                lcd.print("Port");
                 lcd.setCursor(6, 0);
                 lcd.print(i);
                 lcd.setCursor(8, 0);
@@ -221,13 +225,15 @@ void loop()
                 lcd.print("You can charge");
                 delay(500);
                 Serial.println("bật cổng sạc.");
+
                 powerOutlet[i] = 1;
+                // bật cổng sạc
                 digitalWrite(portPowerOutlet[i], 1);
 
-                Users[i].uid = uidDec;
-                Users[i].breakTime = millis();
+                users[i].uid = uidDec;
+                users[i].breakTime = millis();
                 Serial.println("UID của thiết bị đang sạc là:");
-                Serial.println(Users[i].uid);
+                Serial.println(users[i].uid);
             }
         }
     }
@@ -240,7 +246,6 @@ void loop()
         lcd.print("Sorry, Again.");
         delay(500);
         Serial.println("Sai thẻ rồi.");
-
     }
 
     mfrc522.PICC_HaltA();

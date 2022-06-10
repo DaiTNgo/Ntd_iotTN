@@ -28,7 +28,7 @@ void loop() {
   }
 
   Serial.print("UID Cua the");
-  for(byte i = 0;i<mfrc522.uid.size;i++){
+  for (byte i = 0; i < mfrc522.uid.size; i++) {
     UID[i] = mfrc522.uid.uidByte[i];
   }
   // Dump debug info about the card; PICC_HaltA() is automatically called
