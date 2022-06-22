@@ -20,7 +20,6 @@ int lcdColumns = 16;
 int lcdRows = 2;
 
 void UART();
-void TestFirebase();
 
 void setup()
 {
