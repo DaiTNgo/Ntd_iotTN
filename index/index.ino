@@ -187,7 +187,8 @@ void loop()
     mfrc522.PCD_StopCrypto1();
     return;
   }
-
+  Serial.print("uidDec: ");
+Serial.println(uidDec);
   if (uidDec == 134756957 || uidDec == 3005101082 || uidDec == 146962411)
   {
     int count = 0;
